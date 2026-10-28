@@ -60,6 +60,19 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_app(args: argparse.Namespace) -> int:
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    app = Path(__file__).with_name("app.py")
+    env = dict(os.environ, BILLING_DB_PATH=str(args.db))
+    return subprocess.call(
+        [sys.executable, "-m", "streamlit", "run", str(app), *args.streamlit_args], env=env
+    )
+
+
 def cmd_mcp(args: argparse.Namespace) -> int:
     import os
 
@@ -89,6 +102,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--month", default=DEFAULT_MONTH, help="Billing month, YYYY-MM.")
     p.set_defaults(func=cmd_run)
 
+    p = sub.add_parser("app", help="Open the review app; extra options go to streamlit run.")
+    p.set_defaults(func=cmd_app)
+
     p = sub.add_parser("mcp", help="Serve the review tools over MCP (stdio), for Claude Code.")
     p.set_defaults(func=cmd_mcp)
     return parser
@@ -96,7 +112,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
-    args = parser.parse_args(argv)
+    args, extra = parser.parse_known_args(argv)
+    if extra and getattr(args, "func", None) is not cmd_app:
+        parser.error(f"unrecognized arguments: {' '.join(extra)}")
+    args.streamlit_args = extra
     if not getattr(args, "func", None):
         parser.print_help()
         return 0
