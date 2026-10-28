@@ -33,7 +33,8 @@ def test_fetch_smard_picks_overlapping_weeks_and_trims():
             return httpx.Response(200, json={"timestamps": [_ms(week0), _ms(week1)]})
         start = int(request.url.path.rsplit("_", 1)[1].removesuffix(".json"))
         series = [[start + i * 900_000, 100.0 + i] for i in range(7 * 96)]
-        series[3][1] = None  # SMARD uses null for not-yet-published values
+        if start == _ms(week0):
+            series[3][1] = None  # SMARD uses null for not-yet-published values
         return httpx.Response(200, json={"series": series})
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
