@@ -34,6 +34,7 @@ def cmd_prices(args: argparse.Namespace) -> int:
 
 def cmd_run(args: argparse.Namespace) -> int:
     from billing_agent.prices import missing_price_intervals
+    from billing_agent.reviewer import review_run
     from billing_agent.workflow import run_billing
 
     with connect(args.db) as con:
@@ -41,6 +42,7 @@ def cmd_run(args: argparse.Namespace) -> int:
             print(f"Prices for {args.month} are incomplete; run `billing-agent prices` first.")
             return 1
         counts = run_billing(con, args.month)
+        reviewed = review_run(con, args.month)
         rows = con.execute(
             """SELECT i.customer_id, c.name, i.status, i.gross_eur,
                       string_agg(s.rule, ', ' ORDER BY s.rule) AS rules
@@ -54,6 +56,17 @@ def cmd_run(args: argparse.Namespace) -> int:
         amount = f"{gross:>12,.2f} EUR" if gross is not None else " " * 16
         print(f"{cid}  {name[:30]:30}  {status:12}  {amount}  {rules or ''}")
     print(", ".join(f"{n} {s}" for s, n in sorted(counts.items())))
+    print("Rules review: " + ", ".join(f"{n} {v}" for v, n in sorted(reviewed.items())))
+    return 0
+
+
+def cmd_mcp(args: argparse.Namespace) -> int:
+    import os
+
+    from billing_agent import mcp_server
+
+    os.environ["BILLING_DB_PATH"] = str(args.db)
+    mcp_server.main()
     return 0
 
 
@@ -75,6 +88,9 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("run", help="Check data and calculate this month's invoices.")
     p.add_argument("--month", default=DEFAULT_MONTH, help="Billing month, YYYY-MM.")
     p.set_defaults(func=cmd_run)
+
+    p = sub.add_parser("mcp", help="Serve the review tools over MCP (stdio), for Claude Code.")
+    p.set_defaults(func=cmd_mcp)
     return parser
 
 

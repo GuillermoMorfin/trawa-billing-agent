@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "billing-review": {
+      "type": "stdio",
+      "command": ".venv/bin/billing-agent",
+      "args": ["--db", "data/billing.duckdb", "mcp"]
+    }
+  }
+}
