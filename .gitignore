@@ -1,0 +1,21 @@
+# Secrets
+.env
+
+# Data (the price snapshot lives in the package, not here)
+data/*
+!data/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/
